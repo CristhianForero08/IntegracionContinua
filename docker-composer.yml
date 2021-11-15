@@ -1,0 +1,59 @@
+version: '3.9'
+services:
+  webserver:
+    build:
+      context: .
+      dockerfile: docker/webserver/Dockerfile
+      args:
+        REPOSITORY_HOST: 192.168.204.10
+    working_dir: /var/www
+    volumes:
+      #Logs
+      - ./docker/log/applications:/var/log
+      #Sources
+      - ./.git:/var/www/.git
+    links:
+      - queue
+      - database
+    ports:
+      - 80:80
+      - 443:443
+      - 9001:9001
+    networks:
+      back-network:
+        ipv4_address: 172.192.0.2
+  database:
+    image: mysql:8.0.19
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - /var/lib/mysql
+      - ./docker/database/bootstrap:/docker-entrypoint-initdb.d
+      - ./docker/database/config.cnf:/etc/mysql/conf.d/config.cnf
+      - ./docker/database/log/general.log:/var/log/mysql/general.log
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      back-network:
+        ipv4_address: 172.192.0.4
+  queue:
+    image: rabbitmq:management
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbit
+      - RABBITMQ_DEFAULT_PASS=rabbit
+      - RABBITMQ_DEFAULT_VHOST=rabbit
+    ports:
+      - 15672:15672
+      - 5672:5672
+    networks:
+      back-network:
+        ipv4_address: 172.192.0.3
+  mailer:
+    image: mailhog/mailhog:v1.0.0
+    ports:
+      - 1025:1025
+      - 8025:8025
+    networks:
+      back-network:
+        ipv4_address: 172.192.0.5
