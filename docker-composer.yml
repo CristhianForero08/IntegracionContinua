@@ -57,3 +57,12 @@ services:
     networks:
       back-network:
         ipv4_address: 172.192.0.5
+  fpm_build:
+    build:
+      context: .
+      dockerfile: docker/webserver/Dockerfile
+    command: [ "composer", "install", "--no-dev" ]
+    environment:
+      - APP_ENV=prod
+    volumes:
+        - ./project/:/var/www/project
